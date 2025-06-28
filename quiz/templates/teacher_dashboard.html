@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teacher Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-5">
+    <h1 class="mb-4">Welcome, {{ request.user.username }} (Teacher)</h1>
+    <p>Use the admin panel or build UI here to add/manage quizzes.</p>
+    <a href="/admin/" class="btn btn-success">Go to Django Admin</a>
+</body>
+</html>

@@ -18,3 +18,11 @@ class QuizForm(forms.Form):
                 widget=forms.RadioSelect,
                 required=True,
             )
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+
+class StudentLoginForm(AuthenticationForm):
+    pass  # uses Django's built-in fields
+
+class TeacherLoginForm(AuthenticationForm):
+    pass  # same for teacher
