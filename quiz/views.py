@@ -151,3 +151,53 @@ def quizzes_by_subject(request, subject_id):
     subject = get_object_or_404(Subject, id=subject_id)
     quizzes = subject.quizzes.all()
     return render(request, 'quizzes_by_subject.html', {'subject': subject, 'quizzes': quizzes})
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Quiz, Question
+
+from django.shortcuts import render, get_object_or_404
+from .models import Quiz, Question
+
+def take_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    questions = quiz.questions.all().order_by('id')  # Order questions consistently
+
+    current_index = request.session.get(f'quiz_{quiz_id}_current_index', 0)
+
+    if request.method == 'POST':
+        selected_option_key = request.POST.get('option')
+        current_question_id = request.session.get(f'quiz_{quiz_id}_current_question_id')
+        current_question = get_object_or_404(Question, pk=current_question_id)
+
+        selected_answer_text = getattr(current_question, selected_option_key, "")
+
+        # 🟢 Map integer correct_option (1-4) to option field name:
+        option_map = {1: "option1", 2: "option2", 3: "option3", 4: "option4"}
+        correct_option_key = option_map.get(current_question.correct_option, "")
+        correct_answer_text = getattr(current_question, correct_option_key, "")
+
+        if selected_answer_text == correct_answer_text:
+            score = request.session.get(f'quiz_{quiz_id}_score', 0) + 1
+            request.session[f'quiz_{quiz_id}_score'] = score
+
+        current_index += 1
+        request.session[f'quiz_{quiz_id}_current_index'] = current_index
+
+    if current_index >= questions.count():
+        score = request.session.get(f'quiz_{quiz_id}_score', 0)
+        request.session.pop(f'quiz_{quiz_id}_current_index', None)
+        request.session.pop(f'quiz_{quiz_id}_current_question_id', None)
+        request.session.pop(f'quiz_{quiz_id}_score', None)
+        return render(request, 'quiz_result.html', {'quiz': quiz, 'score': score, 'total': questions.count()})
+
+    current_question = questions[current_index]
+    request.session[f'quiz_{quiz_id}_current_question_id'] = current_question.id
+
+    return render(request, 'quiz_question.html', {
+        'quiz': quiz,
+        'question': current_question,
+        'current': current_index + 1,
+        'total': questions.count()
+    })
+
+
+
