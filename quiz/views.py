@@ -199,5 +199,152 @@ def take_quiz(request, quiz_id):
         'total': questions.count()
     })
 
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Subject, Quiz, Question
+
+def is_teacher(user):
+    return user.is_authenticated and user.is_staff  # or custom is_teacher field
+
+@login_required
+@user_passes_test(is_teacher)
+def teacher_dashboard(request):
+    subjects = Subject.objects.all()
+    return render(request, 'teacher/dashboard.html', {'subjects': subjects})
 
 
+@login_required
+@user_passes_test(is_teacher)
+def teacher_subject_detail(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id)
+    quizzes = subject.quizzes.all()
+    return render(request, 'teacher/subject_detail.html', {'subject': subject, 'quizzes': quizzes})
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Subject, Quiz
+from .forms import QuizForm
+
+def add_quiz(request, subject_id):
+    subject = get_object_or_404(Subject, pk=subject_id)
+    if request.method == 'POST':
+        form = QuizModelForm(request.POST)
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.subject = subject
+            quiz.save()
+            return redirect('teacher_subject_detail', subject_id=subject.id)
+    else:
+        form = QuizModelForm()
+    return render(request, 'teacher/quiz_form.html', {'form': form, 'subject': subject})
+
+
+def edit_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    if request.method == 'POST':
+        form = QuizForm(request.POST, instance=quiz)
+        if form.is_valid():
+            form.save()
+            return redirect('teacher_subject_detail', subject_id=quiz.subject.id)
+    else:
+        form = QuizForm(instance=quiz)
+    return render(request, 'teacher/edit_quiz.html', {'form': form, 'quiz': quiz})
+
+def delete_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    subject_id = quiz.subject.id
+    if request.method == 'POST':
+        quiz.delete()
+        return redirect('teacher_subject_detail', subject_id=subject_id)
+    return render(request, 'teacher/delete_quiz.html', {'quiz': quiz})
+
+from .forms import QuestionModelForm
+
+def add_question(request, quiz_id):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    if request.method == 'POST':
+        form = question_form(request.POST)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.quiz = quiz
+            question.save()
+            return redirect('edit_quiz', quiz_id=quiz.id)
+    else:
+       return question_form(request, quiz_id)
+    return render(request, 'teacher/add_question.html', {'form': form, 'quiz': quiz})
+
+def edit_question(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.method == 'POST':
+        form = question_form(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            return redirect('edit_quiz', quiz_id=question.quiz.id)
+    else:
+        form = question_form(instance=question)
+    return render(request, 'teacher/edit_question.html', {'form': form, 'question': question})
+
+def delete_question(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    quiz_id = question.quiz.id
+    if request.method == 'POST':
+        question.delete()
+        return redirect('edit_quiz', quiz_id=quiz_id)
+    return render(request, 'teacher/delete_question.html', {'question': question})
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import Subject, Quiz
+from .forms import QuestionModelForm
+
+from .forms import QuizModelForm, QuestionModelForm
+
+def is_teacher(user):
+    return user.is_staff  # Adjust if you use a custom permission
+
+@login_required
+@user_passes_test(is_teacher)
+def teacher_dashboard(request):
+    subjects = Subject.objects.all()
+    return render(request, 'teacher/teacher_dashboard.html', {'subjects': subjects})
+
+@login_required
+@user_passes_test(is_teacher)
+def quiz_form(request, subject_id, quiz_id=None):
+    subject = get_object_or_404(Subject, pk=subject_id)
+    if quiz_id:
+        quiz = get_object_or_404(Quiz, pk=quiz_id, subject=subject)
+    else:
+        quiz = None
+
+    if request.method == 'POST':
+        form = QuizModelForm(request.POST, instance=quiz)
+        if form.is_valid():
+            new_quiz = form.save(commit=False)
+            new_quiz.subject = subject
+            new_quiz.save()
+            return redirect('teacher_subject_detail', subject_id=subject.id)
+    else:
+        form = QuizModelForm(instance=quiz)
+    
+    return render(request, 'teacher/quiz_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_teacher)
+def question_form(request, quiz_id, question_id=None):
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    if question_id:
+        question = get_object_or_404(Question, pk=question_id, quiz=quiz)
+    else:
+        question = None
+
+    if request.method == 'POST':
+        form = QuestionModelForm(request.POST, instance=question)
+        if form.is_valid():
+            new_question = form.save(commit=False)
+            new_question.quiz = quiz
+            new_question.save()
+            return redirect('teacher_quiz_detail', quiz_id=quiz.id)
+    else:
+        form = QuestionModelForm(instance=question)
+    
+    return render(request, 'teacher/question_form.html', {'form': form, 'quiz': quiz})

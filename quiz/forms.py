@@ -1,6 +1,8 @@
 from django import forms
-from .models import Question
+from django.contrib.auth.forms import AuthenticationForm
+from .models import Quiz, Question
 
+# ✅ Form for students to take a quiz
 class QuizForm(forms.Form):
     def __init__(self, *args, **kwargs):
         questions = kwargs.pop('questions')
@@ -18,11 +20,34 @@ class QuizForm(forms.Form):
                 widget=forms.RadioSelect,
                 required=True,
             )
-from django import forms
-from django.contrib.auth.forms import AuthenticationForm
 
+# ✅ Forms for login
 class StudentLoginForm(AuthenticationForm):
-    pass  # uses Django's built-in fields
+    pass  # Uses Django's built-in username & password
 
 class TeacherLoginForm(AuthenticationForm):
-    pass  # same for teacher
+    pass  # Uses Django's built-in username & password
+
+# ✅ Form for teachers to add/edit a quiz (only needs title)
+class QuizModelForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ['title']
+
+# ✅ Form for teachers to add/edit a question
+class QuestionModelForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['question_text', 'option1', 'option2', 'option3', 'option4', 'correct_option']
+
+from .models import Quiz, Question
+
+class QuizModelForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = ['title']
+
+class QuestionModelForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['question_text', 'option1', 'option2', 'option3', 'option4', 'correct_option']

@@ -1,0 +1,32 @@
+{% extends 'teacher/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Teacher Dashboard</h2>
+
+    <h4>Subjects</h4>
+    <ul class="list-group">
+        {% for subject in subjects %}
+        <li class="list-group-item">
+            <strong>{{ subject.name }}</strong>
+            <div class="mt-2">
+                <a href="{% url 'teacher_add_quiz' subject.id %}" class="btn btn-success btn-sm">
+                    ➕ Add Quiz
+                </a>
+                {% for quiz in subject.quizzes.all %}
+                <div class="mt-2 ms-4">
+                    <span class="fw-bold">{{ quiz.title }}</span>
+                    <a href="{% url 'teacher_edit_quiz' subject.id quiz.id %}" class="btn btn-primary btn-sm">✏️ Edit Quiz</a>
+                    <a href="{% url 'teacher_add_question' quiz.id %}" class="btn btn-secondary btn-sm">➕ Add Question</a>
+                </div>
+                {% empty %}
+                <p class="ms-4 text-muted">No quizzes yet for this subject.</p>
+                {% endfor %}
+            </div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">No subjects available.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
